@@ -126,13 +126,17 @@ def main():
   database_path = parsed_arguments.path
   sql_query = parsed_arguments.query
 
-  fql = FlatQL(database_path)
-  if sql_query is not None:
-    queries = [query.strip() for query in sql_query.split(';')]
-    for query in queries:
-      fql.query(query)
-  else:
-    fql.start_console()
+
+  try:
+    fql = FlatQL(database_path)
+    if sql_query is not None:
+      queries = [query.strip() for query in sql_query.split(';')]
+      for query in queries:
+        fql.query(query)
+    else:
+      fql.start_console()
+  except sqlite3.Error as e:
+    print "SQLite Error: {0}".format(e.args[0])
 
 
 if __name__ == '__main__':
