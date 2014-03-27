@@ -30,6 +30,23 @@ class FlatQL:
 
     self._changed = zero_changes != self._sqlite_db.total_changes
 
+  def query(self, sql_query, output=sys.stdout):
+    zero_changes = self._sqlite_db.total_changes
+
+    with contextlib.closing(self._sqlite_db.cursor()) as c:
+      c.execute(sql_query)
+
+      changed = zero_changes != self._sqlite_db.total_changes
+      self._changed = changed or self._changed
+        
+      if c.description is not None:
+        headers = [col[0] for col in c.description]
+        writer = csv.writer(output)
+        writer.writerow(headers)
+
+        results = c.fetchall()
+        writer.writerows(results)
+
   def __del__(self):
     if self._changed:
       FlatQL.save_database(self._sqlite_db, self._database_path)
@@ -104,12 +121,18 @@ def main():
     default='./',
     action=existing_path,
     help="Database Directory Path")
+  argument_parser.add_argument('-q', '--query',
+    help="Semicolon separated SQLite Queries. None gives you an SQLite Terminal")
 
   parsed_arguments = argument_parser.parse_args()
   database_path = parsed_arguments.path
+  sql_query = parsed_arguments.query
 
   fql = FlatQL(database_path)
-  fql.start_console()
+  if sql_query is not None:
+    fql.query(sql_query)
+  else:
+    fql.start_console()
 
 
 if __name__ == '__main__':
