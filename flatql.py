@@ -7,6 +7,11 @@ import argparse
 from tools import existing_path
 
 
+class FlatQL:
+  def __init__(self, database_path):
+    self._database_path = database_path
+
+
 def main():
   argument_parser = argparse.ArgumentParser(
     description="Execute SQL-Queries on a Folder" +
@@ -17,7 +22,10 @@ def main():
     help="Database Directory Path")
 
   parsed_arguments = argument_parser.parse_args()
+  database_path = parsed_arguments.path
   
+  flq = FlatQL(database_path)
+
 
 if __name__ == '__main__':
   sys.exit(main())
