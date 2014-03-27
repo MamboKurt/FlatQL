@@ -11,6 +11,7 @@ import csv
 import sqlite3
 
 from tools import existing_path
+from sqlite_console import SQLiteConsole
 
 
 class FlatQL:
@@ -19,6 +20,10 @@ class FlatQL:
     self._sqlite_db = sqlite3.connect(':memory:')
 
     FlatQL.load_database(self._sqlite_db, self._database_path)
+
+  def start_console(self):
+    sqlite_console = SQLiteConsole(self._sqlite_db)
+    sqlite_console.cmdloop("SQL Interactive Console")
 
   @staticmethod
   def load_database(database, database_path):
@@ -63,7 +68,8 @@ def main():
   parsed_arguments = argument_parser.parse_args()
   database_path = parsed_arguments.path
   
-  flq = FlatQL(database_path)
+  fql = FlatQL(database_path)
+  fql.start_console()
 
 
 if __name__ == '__main__':
