@@ -64,7 +64,7 @@ class FlatQL:
       
     with contextlib.closing(database.cursor()) as c, open(table_path, 'rU') as file_handle:
       csv_reader = csv.reader(file_handle)
-      columns = [column.strip() for column in next(csv_reader)]
+      columns = [column.strip() for column in csv_reader.next()]
       escaped_columns = [re.sub(r'^([^" ]+)(.*)', r'"\1"\2', column) for column in columns]
       
       c.execute((
