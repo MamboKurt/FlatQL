@@ -18,12 +18,23 @@ class FlatQL:
   def __init__(self, database_path):
     self._database_path = database_path
     self._sqlite_db = sqlite3.connect(':memory:')
+    self._changed = False
 
     FlatQL.load_database(self._sqlite_db, self._database_path)
 
   def start_console(self):
+    zero_changes = self._sqlite_db.total_changes
+
     sqlite_console = SQLiteConsole(self._sqlite_db)
     sqlite_console.cmdloop("SQL Interactive Console")
+
+    self._changed = zero_changes != self._sqlite_db.total_changes
+
+  def __del__(self):
+    if self._changed:
+      FlatQL.save_database(self._sqlite_db, self._database_path)
+    self._sqlite_db.close()
+    
 
   @staticmethod
   def load_database(database, database_path):
@@ -54,6 +65,35 @@ class FlatQL:
 
     database.commit()
 
+  @staticmethod
+  def save_database(database_connection, database_path):
+    for table_path in glob.glob(os.path.join(database_path, '*.csv')):
+      os.unlink(table_path)
+
+    with contextlib.closing(database_connection.cursor()) as c:
+      c.execute(u'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\';')
+      write_tables = [row[0] for row in c.fetchall()]
+
+    for write_table in write_tables:
+      FlatQL.save_table(database_connection, database_path, write_table)
+
+  @staticmethod
+  def save_table(database_connection, directory_path, table_name):
+    csv_file_path = os.path.join(directory_path, table_name+'.csv')
+    with contextlib.closing(database_connection.cursor()) as c, open(csv_file_path, 'w') as file_handle:
+      c.execute(u'SELECT sql FROM sqlite_master WHERE name = "{table_name}";'.format(table_name = table_name))
+      sql = c.fetchone()[0]
+      columns_string = sql[sql.find("(")+1:sql.find(")")]
+      writer = csv.writer(file_handle)
+      columns = [column.strip() for column in columns_string.split(',')]
+      writer.writerow(columns)
+
+      c.execute(
+        u'SELECT * FROM {table_name}'.format(table_name=table_name) )
+      results = c.fetchall()
+      #~ hier sollte noch umgewandelt werden unicode -> encoding
+      writer.writerows(results)
+
 
 
 def main():
@@ -67,7 +107,7 @@ def main():
 
   parsed_arguments = argument_parser.parse_args()
   database_path = parsed_arguments.path
-  
+
   fql = FlatQL(database_path)
   fql.start_console()
 
