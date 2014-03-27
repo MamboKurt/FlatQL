@@ -68,10 +68,8 @@ class FlatQL:
       escaped_columns = [re.sub(r'^([^" ]+)(.*)', r'"\1"\2', column) for column in columns]
       
       c.execute((
-        u'CREATE TABLE IF NOT EXISTS "{table_name}"(' +
-        u', '.join([u'{}'] * len(escaped_columns)) +
-        u');'
-      ).format(table_name=table_name, *escaped_columns))
+        u'CREATE TABLE IF NOT EXISTS "{table_name}"(' + u', '.join([u'{}'] * len(escaped_columns)) + u');'
+        ).format(table_name=table_name, *escaped_columns))
 
       query = u'INSERT INTO "{table_name}" VALUES ({params})'.format(
                 table_name=table_name,
@@ -108,15 +106,14 @@ class FlatQL:
       c.execute(
         u'SELECT * FROM {table_name}'.format(table_name=table_name) )
       results = c.fetchall()
-      #~ hier sollte noch umgewandelt werden unicode -> encoding
+      #~ !!! UNICODE -> ENCODING
       writer.writerows(results)
 
 
 
 def main():
   argument_parser = argparse.ArgumentParser(
-    description="Execute SQL-Queries on a Folder" +
-      " containing CSV Files")
+    description="Execute SQL-Queries on a Folder containing CSV Files")
   argument_parser.add_argument('-p', '--path',
     default='./',
     action=existing_path,
