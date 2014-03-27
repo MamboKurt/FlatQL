@@ -1,5 +1,6 @@
 import sys
 import cmd
+import sqlite3
 import csv
 
 class SQLiteConsole(cmd.Cmd):
@@ -20,11 +21,12 @@ class SQLiteConsole(cmd.Cmd):
     except sqlite3.OperationalError, e:
       print >> sys.stderr, e
       return
-    header = [col[0] for col in self.db_cur.description]
-    writer = csv.writer(sys.stdout)
-    writer.writerow(header)
-    for row in self.db_cur:
-      writer.writerow(row)
+    if self.db_cur.description is not None:
+      header = [col[0] for col in self.db_cur.description]
+      writer = csv.writer(sys.stdout)
+      writer.writerow(header)
+      for row in self.db_cur:
+        writer.writerow(row)
 
   def emptyline(self):
     self._stop = True
