@@ -127,7 +127,9 @@ def main():
 
   fql = FlatQL(database_path)
   if sql_query is not None:
-    fql.query(sql_query)
+    queries = [query.strip() for query in sql_query.split(';')]
+    for query in queries:
+      fql.query(query)
   else:
     fql.start_console()
 
