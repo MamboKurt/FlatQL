@@ -1,0 +1,4 @@
+# FlatQL
+
+FlatQL is a small tool for working on CSV files in a directory as it was
+a SQLite database containing tables.
