@@ -14,7 +14,19 @@ from tools import existing_path
 from sqlite_console import SQLiteConsole
 
 
-STANDARD_SUFFIX = "csv"
+STANDARD_SUFFIX = 'csv'
+STANDARD_DELIMITER = ','
+STANDARD_QUOTING = csv.QUOTE_NONE
+STANDARD_QUOTING_CHAR = '"'
+STANDARD_DOUBLEQUOTE = False
+STANDARD_ESCAPECHAR = '\\'
+
+csv.register_dialect("flatql",
+  delimiter=STANDARD_DELIMITER,
+  quoting=csv.STANDARD_QUOTING,
+  quotechar=STANDARD_QUOTING_CHAR,
+  doublequote=STANDARD_DOUBLEQUOTE,
+  escapechar=STANDARD_ESCAPECHAR)
 
 
 class FlatQL:
