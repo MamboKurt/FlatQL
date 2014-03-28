@@ -14,6 +14,9 @@ from tools import existing_path
 from sqlite_console import SQLiteConsole
 
 
+STANDARD_SUFFIX = "csv"
+
+
 class FlatQL:
   def __init__(self, database_path):
     self._database_path = database_path
@@ -55,7 +58,7 @@ class FlatQL:
 
   @staticmethod
   def load_database(database, database_path):
-    for table_path in glob.glob(os.path.join(database_path, '*.csv')):
+    for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
       FlatQL.load_table(database, table_path)
 
   @staticmethod
@@ -83,7 +86,7 @@ class FlatQL:
 
   @staticmethod
   def save_database(database_connection, database_path):
-    for table_path in glob.glob(os.path.join(database_path, '*.csv')):
+    for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
       os.unlink(table_path)
 
     with contextlib.closing(database_connection.cursor()) as c:
