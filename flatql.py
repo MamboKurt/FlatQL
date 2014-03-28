@@ -114,7 +114,8 @@ class FlatQL:
 
 def main():
   argument_parser = argparse.ArgumentParser(
-    description="Execute SQL-Queries on a Folder containing CSV Files")
+    description="Execute SQL-Queries on a Folder containing CSV Files",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   argument_parser.add_argument('-p', '--path',
     default='./',
     action=existing_path,
