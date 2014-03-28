@@ -79,16 +79,14 @@ class FlatQL:
     with contextlib.closing(database.cursor()) as c, open(table_path, 'rU') as file_handle:
       csv_reader = csv.reader(file_handle, **fmtparams)
       columns = [column.strip() for column in csv_reader.next()]
-      #~ Somethings fishy here. "'s get added in suspicious ways
-      escaped_columns = [re.sub(r'^([^" ]+)(.*)', r'"\1"\2', column) for column in columns]
 
       c.execute((
-        u'CREATE TABLE IF NOT EXISTS "{table_name}"(' + u', '.join([u'{}'] * len(escaped_columns)) + u');'
-        ).format(table_name=table_name, *escaped_columns))
+        u'CREATE TABLE IF NOT EXISTS "{table_name}"(' + u', '.join([u'{}'] * len(columns)) + u');'
+        ).format(table_name=table_name, *columns))
 
       query = u'INSERT INTO "{table_name}" VALUES ({params})'.format(
                 table_name=table_name,
-                params=u', '.join(u'?' * len(escaped_columns)) )
+                params=u', '.join(u'?' * len(columns)) )
 
       #~ !!! ENCODING -> UNICODE
       c.executemany(query, csv_reader)
