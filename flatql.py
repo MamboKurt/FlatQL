@@ -74,7 +74,7 @@ class FlatQL:
 
       query = u'INSERT INTO "{table_name}" VALUES ({params})'.format(
                 table_name=table_name,
-                params=u', '.join(u'?' * len(columns)) )
+                params=u', '.join(u'?' * len(escaped_columns)) )
 
       #~ !!! ENCODING -> UNICODE
       c.executemany(query, csv_reader)
