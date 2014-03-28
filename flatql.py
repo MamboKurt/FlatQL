@@ -38,7 +38,7 @@ class FlatQL:
 
       changed = zero_changes != self._sqlite_db.total_changes
       self._changed = changed or self._changed
-        
+
       if c.description is not None:
         headers = [col[0] for col in c.description]
         writer = csv.writer(output)
@@ -51,7 +51,7 @@ class FlatQL:
     if self._changed:
       FlatQL.save_database(self._sqlite_db, self._database_path)
     self._sqlite_db.close()
-    
+
 
   @staticmethod
   def load_database(database, database_path):
@@ -61,13 +61,13 @@ class FlatQL:
   @staticmethod
   def load_table(database, table_path):
     table_name = os.path.splitext(os.path.basename(table_path))[0]
-      
+
     with contextlib.closing(database.cursor()) as c, open(table_path, 'rU') as file_handle:
       csv_reader = csv.reader(file_handle)
       columns = [column.strip() for column in csv_reader.next()]
       #~ Somethings fishy here. "'s get added in suspicious ways
       escaped_columns = [re.sub(r'^([^" ]+)(.*)', r'"\1"\2', column) for column in columns]
-      
+
       c.execute((
         u'CREATE TABLE IF NOT EXISTS "{table_name}"(' + u', '.join([u'{}'] * len(escaped_columns)) + u');'
         ).format(table_name=table_name, *escaped_columns))
