@@ -17,25 +17,19 @@ from sqlite_console import SQLiteConsole
 STANDARD_SUFFIX = 'csv'
 STANDARD_DELIMITER = ','
 STANDARD_QUOTING = csv.QUOTE_NONE
-STANDARD_QUOTING_CHAR = '"'
+STANDARD_QUOTE_CHAR = '"'
 STANDARD_DOUBLEQUOTE = False
 STANDARD_ESCAPECHAR = '\\'
 
-csv.register_dialect("flatql",
-  delimiter=STANDARD_DELIMITER,
-  quoting=csv.STANDARD_QUOTING,
-  quotechar=STANDARD_QUOTING_CHAR,
-  doublequote=STANDARD_DOUBLEQUOTE,
-  escapechar=STANDARD_ESCAPECHAR)
-
 
 class FlatQL:
-  def __init__(self, database_path):
+  def __init__(self, database_path, **fmtparams):
     self._database_path = database_path
     self._sqlite_db = sqlite3.connect(':memory:')
     self._changed = False
+    self._fmtparams = fmtparams
 
-    FlatQL.load_database(self._sqlite_db, self._database_path)
+    FlatQL.load_database(self._sqlite_db, self._database_path, **self._fmtparams)
 
   def start_console(self):
     zero_changes = self._sqlite_db.total_changes
@@ -64,21 +58,21 @@ class FlatQL:
 
   def __del__(self):
     if self._changed:
-      FlatQL.save_database(self._sqlite_db, self._database_path)
+      FlatQL.save_database(self._sqlite_db, self._database_path, **self._fmtparams)
     self._sqlite_db.close()
 
 
   @staticmethod
-  def load_database(database, database_path):
+  def load_database(database, database_path, **fmtparams):
     for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
-      FlatQL.load_table(database, table_path)
+      FlatQL.load_table(database, table_path, **fmtparams)
 
   @staticmethod
-  def load_table(database, table_path):
+  def load_table(database, table_path, **fmtparams):
     table_name = os.path.splitext(os.path.basename(table_path))[0]
 
     with contextlib.closing(database.cursor()) as c, open(table_path, 'rU') as file_handle:
-      csv_reader = csv.reader(file_handle)
+      csv_reader = csv.reader(file_handle, **fmtparams)
       columns = [column.strip() for column in csv_reader.next()]
       #~ Somethings fishy here. "'s get added in suspicious ways
       escaped_columns = [re.sub(r'^([^" ]+)(.*)', r'"\1"\2', column) for column in columns]
@@ -97,7 +91,7 @@ class FlatQL:
     database.commit()
 
   @staticmethod
-  def save_database(database_connection, database_path):
+  def save_database(database_connection, database_path, **fmtparams):
     for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
       os.unlink(table_path)
 
@@ -106,16 +100,16 @@ class FlatQL:
       write_tables = [row[0] for row in c.fetchall()]
 
     for write_table in write_tables:
-      FlatQL.save_table(database_connection, database_path, write_table)
+      FlatQL.save_table(database_connection, database_path, write_table, **fmtparams)
 
   @staticmethod
-  def save_table(database_connection, directory_path, table_name):
+  def save_table(database_connection, directory_path, table_name, **fmtparams):
     csv_file_path = os.path.join(directory_path, table_name+'.csv')
     with contextlib.closing(database_connection.cursor()) as c, open(csv_file_path, 'w') as file_handle:
       c.execute(u'SELECT sql FROM sqlite_master WHERE name = "{table_name}";'.format(table_name = table_name))
       sql = c.fetchone()[0]
       columns_string = sql[sql.find("(")+1:sql.find(")")]
-      writer = csv.writer(file_handle)
+      writer = csv.writer(file_handle, **fmtparams)
       columns = [column.strip() for column in columns_string.split(',')]
       writer.writerow(columns)
 
@@ -124,7 +118,6 @@ class FlatQL:
       results = c.fetchall()
       #~ !!! UNICODE -> ENCODING
       writer.writerows(results)
-
 
 
 def main():
@@ -137,14 +130,36 @@ def main():
     help="Database Directory Path")
   argument_parser.add_argument('-q', '--query',
     help="Semicolon separated SQLite Queries. None gives you an SQLite Terminal")
+  argument_parser.add_argument('--delimiter',
+    default=STANDARD_DELIMITER,
+    help="Delimiter in CSV Table File")
+  argument_parser.add_argument('--switch_quoting',
+    action='store_const',
+    dest='quoting',
+    default=STANDARD_QUOTING,
+    const=not STANDARD_QUOTING,
+    help="Quoting in CSV Table File")
+  argument_parser.add_argument('--quotechar',
+    default=STANDARD_QUOTE_CHAR,
+    help="Quotingchar in CSV Table File")
+  argument_parser.add_argument('--switch_doublequote',
+    action='store_const',
+    dest='doublequote',
+    default=STANDARD_DOUBLEQUOTE,
+    const=not STANDARD_DOUBLEQUOTE,
+    help="Doublequote in CSV Table File")
+  argument_parser.add_argument('--escapechar',
+    default=STANDARD_ESCAPECHAR,
+    help="Escapechar in CSV Table File")
 
   parsed_arguments = argument_parser.parse_args()
   database_path = parsed_arguments.path
   sql_query = parsed_arguments.query
 
+  fmtparams = {key: value for key, value in vars(parsed_arguments).iteritems() if key in dir(csv.Dialect)}
 
   try:
-    fql = FlatQL(database_path)
+    fql = FlatQL(database_path, **fmtparams)
     if sql_query is not None:
       queries = [query.strip() for query in sql_query.split(';')]
       for query in queries:
