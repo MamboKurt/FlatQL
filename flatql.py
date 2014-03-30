@@ -14,12 +14,17 @@ from tools import existing_path
 from sqlite_console import SQLiteConsole
 
 
-STANDARD_SUFFIX = 'csv'
-STANDARD_DELIMITER = ','
-STANDARD_QUOTING = csv.QUOTE_NONE
-STANDARD_QUOTE_CHAR = '"'
-STANDARD_DOUBLEQUOTE = False
-STANDARD_ESCAPECHAR = '\\'
+DEFAULT_SUFFIX = 'csv'
+DEFAULT_DELIMITER = ','
+DEFAULT_QUOTING = csv.QUOTE_NONE
+DEFAULT_QUOTE_CHAR = '"'
+DEFAULT_DOUBLEQUOTE = False
+DEFAULT_ESCAPECHAR = '\\'
+
+QUOTING_DICT = {'none': csv.QUOTE_NONE,
+                'minimal': csv.QUOTE_MINIMAL,
+                'nonnumeric': csv.QUOTE_NONNUMERIC,
+                'all': csv.QUOTE_ALL}
 
 
 class FlatQL:
@@ -64,7 +69,7 @@ class FlatQL:
 
   @staticmethod
   def load_database(database, database_path, **fmtparams):
-    for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
+    for table_path in glob.glob(os.path.join(database_path, '*.'+DEFAULT_SUFFIX)):
       FlatQL.load_table(database, table_path, **fmtparams)
 
   @staticmethod
@@ -92,7 +97,7 @@ class FlatQL:
 
   @staticmethod
   def save_database(database_connection, database_path, **fmtparams):
-    for table_path in glob.glob(os.path.join(database_path, '*.'+STANDARD_SUFFIX)):
+    for table_path in glob.glob(os.path.join(database_path, '*.'+DEFAULT_SUFFIX)):
       os.unlink(table_path)
 
     with contextlib.closing(database_connection.cursor()) as c:
@@ -131,25 +136,24 @@ def main():
   argument_parser.add_argument('-q', '--query',
     help="Semicolon separated SQLite Queries. None gives you an SQLite Terminal")
   argument_parser.add_argument('--delimiter',
-    default=STANDARD_DELIMITER,
+    default=DEFAULT_DELIMITER,
     help="Delimiter in CSV Table File")
-  argument_parser.add_argument('--switch_quoting',
-    action='store_const',
-    dest='quoting',
-    default=STANDARD_QUOTING,
-    const=not STANDARD_QUOTING,
+  argument_parser.add_argument('--quoting',
+    choices=QUOTING_DICT.keys(),
+    default='minimal',
+    dest='quoting_string',
     help="Quoting in CSV Table File")
   argument_parser.add_argument('--quotechar',
-    default=STANDARD_QUOTE_CHAR,
+    default=DEFAULT_QUOTE_CHAR,
     help="Quotingchar in CSV Table File")
-  argument_parser.add_argument('--switch_doublequote',
+  argument_parser.add_argument('--'+('no' if DEFAULT_DOUBLEQUOTE else '')+'doublequote',
     action='store_const',
     dest='doublequote',
-    default=STANDARD_DOUBLEQUOTE,
-    const=not STANDARD_DOUBLEQUOTE,
-    help="Doublequote in CSV Table File")
+    default=DEFAULT_DOUBLEQUOTE,
+    const=not DEFAULT_DOUBLEQUOTE,
+    help=('Disable ' if DEFAULT_DOUBLEQUOTE else '')+"Doublequote in CSV Table File")
   argument_parser.add_argument('--escapechar',
-    default=STANDARD_ESCAPECHAR,
+    default=DEFAULT_ESCAPECHAR,
     help="Escapechar in CSV Table File")
 
   parsed_arguments = argument_parser.parse_args()
@@ -157,6 +161,7 @@ def main():
   sql_query = parsed_arguments.query
 
   fmtparams = {key: value for key, value in vars(parsed_arguments).iteritems() if key in dir(csv.Dialect)}
+  fmtparams['quoting'] = QUOTING_DICT[parsed_arguments.quoting_string]
 
   try:
     fql = FlatQL(database_path, **fmtparams)
