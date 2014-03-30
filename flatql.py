@@ -15,6 +15,7 @@ from sqlite_console import SQLiteConsole
 
 
 DEFAULT_SUFFIX = 'csv'
+DEFAULT_FILE_ENCODING = 'utf-8'
 DEFAULT_DELIMITER = ','
 DEFAULT_QUOTING = csv.QUOTE_NONE
 DEFAULT_QUOTE_CHAR = '"'
@@ -88,8 +89,8 @@ class FlatQL:
                 table_name=table_name,
                 params=u', '.join(u'?' * len(columns)) )
 
-      #~ !!! ENCODING -> UNICODE
-      c.executemany(query, csv_reader)
+      unicode_data = [[unicode(entry) for entry in row] for row in csv_reader]
+      c.executemany(query, unicode_data)
 
     database.commit()
 
@@ -119,8 +120,8 @@ class FlatQL:
       c.execute(
         u'SELECT * FROM {table_name}'.format(table_name=table_name) )
       results = c.fetchall()
-      #~ !!! UNICODE -> ENCODING
-      writer.writerows(results)
+      unicode_data = [[entry.encode(DEFAULT_FILE_ENCODING)] for row in results for entry in row]
+      writer.writerows(unicode_data)
 
 
 def main():
