@@ -40,21 +40,14 @@ class FlatQL:
     FlatQL.load_database(self._sqlite_db, self._database_path, **self._fmtparams)
 
   def start_console(self):
-    zero_changes = self._sqlite_db.total_changes
-
     sqlite_console = SQLiteConsole(self._sqlite_db)
     sqlite_console.cmdloop("SQL Interactive Console")
 
-    self._changed = zero_changes != self._sqlite_db.total_changes
+    self._changed = sqlite_console.changed
 
   def query(self, sql_query, output=sys.stdout):
-    zero_changes = self._sqlite_db.total_changes
-
     with contextlib.closing(self._sqlite_db.cursor()) as c:
       c.execute(sql_query)
-
-      changed = zero_changes != self._sqlite_db.total_changes
-      self._changed = changed or self._changed
 
       if c.description is not None:
         headers = [col[0] for col in c.description]
@@ -63,6 +56,8 @@ class FlatQL:
 
         results = c.fetchall()
         writer.writerows(results)
+      else:
+        self._changed = True
 
   def __del__(self):
     if self._changed:

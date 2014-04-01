@@ -12,7 +12,12 @@ class SQLiteConsole(cmd.Cmd):
   def __init__(self, database, *args, **kwargs):
     self.db_cur = database.cursor()
     self._stop = False
+    self._changed = False
     cmd.Cmd.__init__(self, *args, **kwargs)
+
+  @property
+  def changed(self):
+    return self._changed
 
   def default(self, query):
     if query.endswith('EOF'):
@@ -29,6 +34,8 @@ class SQLiteConsole(cmd.Cmd):
       writer.writerow(header)
       for row in self.db_cur:
         writer.writerow(row)
+    else:
+      self._changed = True
 
   def emptyline(self):
     self._stop = True
