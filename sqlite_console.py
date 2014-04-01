@@ -3,6 +3,8 @@ import cmd
 import sqlite3
 import csv
 
+import unicode_csv
+
 class SQLiteConsole(cmd.Cmd):
 
   prompt = "=> "
@@ -23,7 +25,7 @@ class SQLiteConsole(cmd.Cmd):
       return
     if self.db_cur.description is not None:
       header = [col[0] for col in self.db_cur.description]
-      writer = csv.writer(sys.stdout)
+      writer = unicode_csv.Writer(sys.stdout)
       writer.writerow(header)
       for row in self.db_cur:
         writer.writerow(row)

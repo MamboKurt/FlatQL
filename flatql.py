@@ -10,6 +10,8 @@ import re
 import csv
 import sqlite3
 
+import unicode_csv
+
 from tools import existing_path
 from sqlite_console import SQLiteConsole
 
@@ -56,7 +58,7 @@ class FlatQL:
 
       if c.description is not None:
         headers = [col[0] for col in c.description]
-        writer = csv.writer(output)
+        writer = unicode_csv.Writer(output)
         writer.writerow(headers)
 
         results = c.fetchall()
@@ -78,7 +80,7 @@ class FlatQL:
     table_name = os.path.splitext(os.path.basename(table_path))[0]
 
     with contextlib.closing(database.cursor()) as c, open(table_path, 'rU') as file_handle:
-      csv_reader = csv.reader(file_handle, **fmtparams)
+      csv_reader = unicode_csv.Reader(file_handle, **fmtparams)
       columns = [column.strip() for column in csv_reader.next()]
 
       c.execute((
@@ -89,8 +91,7 @@ class FlatQL:
                 table_name=table_name,
                 params=u', '.join(u'?' * len(columns)) )
 
-      unicode_data = [[unicode(entry) for entry in row] for row in csv_reader]
-      c.executemany(query, unicode_data)
+      c.executemany(query, csv_reader)
 
     database.commit()
 
@@ -113,15 +114,14 @@ class FlatQL:
       c.execute(u'SELECT sql FROM sqlite_master WHERE name = "{table_name}";'.format(table_name = table_name))
       sql = c.fetchone()[0]
       columns_string = sql[sql.find("(")+1:sql.find(")")]
-      writer = csv.writer(file_handle, **fmtparams)
+      writer = unicode_csv.Writer(file_handle, **fmtparams)
       columns = [column.strip() for column in columns_string.split(',')]
       writer.writerow(columns)
 
       c.execute(
         u'SELECT * FROM {table_name}'.format(table_name=table_name) )
       results = c.fetchall()
-      unicode_data = [[entry.encode(DEFAULT_FILE_ENCODING)] for row in results for entry in row]
-      writer.writerows(unicode_data)
+      writer.writerows(results)
 
 
 def main():
