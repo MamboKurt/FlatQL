@@ -12,7 +12,7 @@ import sqlite3
 
 import unicode_csv
 
-from tools import existing_path
+from tools import existing_directory, existing_file
 from sqlite_console import SQLiteConsole
 
 
@@ -125,10 +125,14 @@ def main():
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   argument_parser.add_argument('-p', '--path',
     default='./',
-    action=existing_path,
+    action=existing_directory,
     help="Database Directory Path")
-  argument_parser.add_argument('-q', '--query',
-    help="Semicolon separated SQLite Queries. None gives you an SQLite Terminal")
+  query_group = argument_parser.add_mutually_exclusive_group()
+  query_group.add_argument('-q', '--query',
+    help="Semicolon separated SQLite Queries.")
+  query_group.add_argument('-s', '--sqlscript',
+    action=existing_file,
+    help="Semicolon separated SQLite Queries in a File.")
   argument_parser.add_argument('--delimiter',
     default=DEFAULT_DELIMITER,
     help="Delimiter in CSV Table File")
@@ -152,15 +156,20 @@ def main():
 
   parsed_arguments = argument_parser.parse_args()
   database_path = parsed_arguments.path
-  sql_query = parsed_arguments.query
 
   fmtparams = {key: value for key, value in vars(parsed_arguments).iteritems() if key in dir(csv.Dialect)}
   fmtparams['quoting'] = QUOTING_DICT[parsed_arguments.quoting_string]
 
+  if parsed_arguments.query is not None:
+    query_string = parsed_arguments.query
+  elif parsed_arguments.sqlscript is not None:
+    with open(parsed_arguments.sqlscript, "r") as file_handle:
+      query_string = file_handle.read()
+
   try:
     fql = FlatQL(database_path, **fmtparams)
-    if sql_query is not None:
-      queries = [query.strip() for query in sql_query.split(';')]
+    if query_string is not None:
+      queries = [query.strip() for query in query_string.split(';')]
       for query in queries:
         fql.query(query)
     else:
