@@ -169,7 +169,7 @@ def main():
   try:
     fql = FlatQL(database_path, **fmtparams)
     if query_string is not None:
-      queries = [query.strip() for query in query_string.split(';')]
+      queries = filter(bool, [query.strip() for query in query_string.split(';')])
       for query in queries:
         fql.query(query)
     else:
